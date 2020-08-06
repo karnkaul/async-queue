@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <deque>
 #include <mutex>
+#include <optional>
 
 namespace kt
 {
@@ -75,7 +76,7 @@ public:
 	///
 	/// \brief Pop a T from the front of the queue, wait until populated / not active
 	///
-	T pop();
+	std::optional<T> pop();
 	///
 	/// \brief Flush the queue, notify all, and obtain any residual items
 	/// \param active Set m_active after moving items
@@ -110,7 +111,7 @@ void async_queue<T, Mutex>::push(T&& t)
 }
 
 template <typename T, typename Mutex>
-T async_queue<T, Mutex>::pop()
+std::optional<T> async_queue<T, Mutex>::pop()
 {
 	auto lock = m_mutex.template lock<std::unique_lock>();
 	m_cv.wait(lock, [this]() -> bool { return !m_queue.empty() || !m_active; });
