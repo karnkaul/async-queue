@@ -74,6 +74,11 @@ public:
 	///
 	void push(T&& t);
 	///
+	/// \brief Forward a T to the back of the queue and notify one
+	///
+	template <template <typename...> typename C, typename... Args>
+	void push(C<T, Args...>&& ts);
+	///
 	/// \brief Pop a T from the front of the queue, wait until populated / not active
 	///
 	std::optional<T> pop();
@@ -111,11 +116,25 @@ void async_queue<T, Mutex>::push(T&& t)
 }
 
 template <typename T, typename Mutex>
+template <template <typename...> typename C, typename... Args>
+void async_queue<T, Mutex>::push(C<T, Args...>&& ts)
+{
+	{
+		auto lock = m_mutex.lock();
+		if (m_active)
+		{
+			std::move(ts.begin(), ts.end(), std::back_inserter(m_queue));
+		}
+	}
+	m_cv.notify_all();
+}
+
+template <typename T, typename Mutex>
 std::optional<T> async_queue<T, Mutex>::pop()
 {
 	auto lock = m_mutex.template lock<std::unique_lock>();
 	m_cv.wait(lock, [this]() -> bool { return !m_queue.empty() || !m_active; });
-	if (!m_queue.empty())
+	if (m_active && !m_queue.empty())
 	{
 		auto ret = std::move(m_queue.front());
 		m_queue.pop_front();
