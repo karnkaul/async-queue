@@ -70,9 +70,9 @@ public:
 
 public:
 	///
-	/// \brief Forward a T to the back of the queue and notify one
+	/// \brief Add a T to the back of the queue and notify one
 	///
-	void push(T&& t);
+	void push(T t);
 	///
 	/// \brief Forward a T to the back of the queue and notify one
 	///
@@ -103,13 +103,13 @@ public:
 };
 
 template <typename T, typename Mutex>
-void async_queue<T, Mutex>::push(T&& t)
+void async_queue<T, Mutex>::push(T t)
 {
 	{
 		auto lock = m_mutex.lock();
 		if (m_active)
 		{
-			m_queue.push_back(std::forward<T>(t));
+			m_queue.push_back(std::move(t));
 		}
 	}
 	m_cv.notify_one();
