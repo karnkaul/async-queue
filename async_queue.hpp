@@ -7,22 +7,19 @@
 #include <mutex>
 #include <optional>
 
-namespace kt
-{
+namespace kt {
 ///
 /// \brief Wrapper for a mutex and associated locks
 ///
 template <typename Mutex = std::mutex>
-struct lockable final
-{
+struct lockable final {
 	Mutex mutex;
 
 	///
 	/// \brief Obtain a Lock on mutex
 	///
 	template <template <typename...> typename Lock = std::scoped_lock>
-	Lock<Mutex> lock()
-	{
+	Lock<Mutex> lock() {
 		return Lock<Mutex>(mutex);
 	}
 };
@@ -37,13 +34,12 @@ struct lockable final
 /// 	- Deactivate queue (as secondary wait condition)
 ///
 template <typename T, typename Mutex = std::mutex>
-class async_queue
-{
-public:
+class async_queue {
+  public:
 	using type = T;
 	using sync = Mutex;
 
-protected:
+  protected:
 	///
 	/// \brief Used to wait on pop() and notify on push()/clear()
 	///
@@ -55,7 +51,7 @@ protected:
 	///
 	bool m_active = true;
 
-public:
+  public:
 	///
 	/// \brief Default constructor
 	///
@@ -63,12 +59,11 @@ public:
 	///
 	/// \brief Polymorhic destructor
 	///
-	virtual ~async_queue()
-	{
+	virtual ~async_queue() {
 		clear();
 	}
 
-public:
+  public:
 	///
 	/// \brief Add a T to the back of the queue and notify one
 	///
@@ -103,12 +98,10 @@ public:
 };
 
 template <typename T, typename Mutex>
-void async_queue<T, Mutex>::push(T t)
-{
+void async_queue<T, Mutex>::push(T t) {
 	{
 		auto lock = m_mutex.lock();
-		if (m_active)
-		{
+		if (m_active) {
 			m_queue.push_back(std::move(t));
 		}
 	}
@@ -117,12 +110,10 @@ void async_queue<T, Mutex>::push(T t)
 
 template <typename T, typename Mutex>
 template <template <typename...> typename C, typename... Args>
-void async_queue<T, Mutex>::push(C<T, Args...>&& ts)
-{
+void async_queue<T, Mutex>::push(C<T, Args...>&& ts) {
 	{
 		auto lock = m_mutex.lock();
-		if (m_active)
-		{
+		if (m_active) {
 			std::move(ts.begin(), ts.end(), std::back_inserter(m_queue));
 		}
 	}
@@ -130,12 +121,10 @@ void async_queue<T, Mutex>::push(C<T, Args...>&& ts)
 }
 
 template <typename T, typename Mutex>
-std::optional<T> async_queue<T, Mutex>::pop()
-{
+std::optional<T> async_queue<T, Mutex>::pop() {
 	auto lock = m_mutex.template lock<std::unique_lock>();
 	m_cv.wait(lock, [this]() -> bool { return !m_queue.empty() || !m_active; });
-	if (m_active && !m_queue.empty())
-	{
+	if (m_active && !m_queue.empty()) {
 		auto ret = std::move(m_queue.front());
 		m_queue.pop_front();
 		return ret;
@@ -144,8 +133,7 @@ std::optional<T> async_queue<T, Mutex>::pop()
 }
 
 template <typename T, typename Mutex>
-std::deque<T> async_queue<T, Mutex>::clear(bool active)
-{
+std::deque<T> async_queue<T, Mutex>::clear(bool active) {
 	decltype(m_queue) ret;
 	{
 		auto lock = m_mutex.lock();
@@ -158,22 +146,19 @@ std::deque<T> async_queue<T, Mutex>::clear(bool active)
 }
 
 template <typename T, typename Mutex>
-bool async_queue<T, Mutex>::empty() const
-{
+bool async_queue<T, Mutex>::empty() const {
 	auto lock = m_mutex.lock();
 	return m_queue.empty();
 }
 
 template <typename T, typename Mutex>
-bool async_queue<T, Mutex>::active() const
-{
+bool async_queue<T, Mutex>::active() const {
 	auto lock = m_mutex.lock();
 	return m_active;
 }
 
 template <typename T, typename Mutex>
-void async_queue<T, Mutex>::active(bool set)
-{
+void async_queue<T, Mutex>::active(bool set) {
 	auto lock = m_mutex.lock();
 	m_active = set;
 	m_cv.notify_all();
