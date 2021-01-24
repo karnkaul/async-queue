@@ -4,26 +4,10 @@
 #pragma once
 #include <condition_variable>
 #include <deque>
-#include <mutex>
 #include <optional>
+#include "lockable.hpp"
 
 namespace kt {
-///
-/// \brief Wrapper for a mutex and associated locks
-///
-template <typename Mutex = std::mutex>
-struct lockable final {
-	Mutex mutex;
-
-	///
-	/// \brief Obtain a Lock on mutex
-	///
-	template <template <typename...> typename Lock = std::scoped_lock>
-	Lock<Mutex> lock() {
-		return Lock<Mutex>(mutex);
-	}
-};
-
 ///
 /// \brief FIFO std::deque wrapper with thread safe API
 ///
@@ -65,11 +49,20 @@ class async_queue {
 
   public:
 	///
-	/// \brief Add a T to the back of the queue and notify one
+	/// \brief Move a T to the back of the queue and notify one
 	///
-	void push(T t);
+	void push(T&& t);
 	///
-	/// \brief Forward a T to the back of the queue and notify one
+	/// \brief Copy a T to the back of the queue and notify one
+	///
+	void push(T const& t);
+	///
+	/// \brief Emplace a T to the back of the queue and notify one
+	///
+	template <typename... U>
+	void emplace(U&&... u);
+	///
+	/// \brief Forward Ts from a container to the back of the queue and notify one
 	///
 	template <template <typename...> typename C, typename... Args>
 	void push(C<T, Args...>&& ts);
@@ -98,11 +91,22 @@ class async_queue {
 };
 
 template <typename T, typename Mutex>
-void async_queue<T, Mutex>::push(T t) {
+void async_queue<T, Mutex>::push(T&& t) {
+	emplace<T>(std::move(t));
+}
+
+template <typename T, typename Mutex>
+void async_queue<T, Mutex>::push(T const& t) {
+	emplace<T>(t);
+}
+
+template <typename T, typename Mutex>
+template <typename... U>
+void async_queue<T, Mutex>::emplace(U&&... u) {
 	{
 		auto lock = m_mutex.lock();
 		if (m_active) {
-			m_queue.push_back(std::move(t));
+			m_queue.emplace_back(std::forward<U>(u)...);
 		}
 	}
 	m_cv.notify_one();
