@@ -29,7 +29,7 @@ class async_queue {
 	///
 	std::condition_variable m_cv;
 	std::deque<T> m_queue;
-	mutable lockable<Mutex> m_mutex;
+	mutable lockable_t<Mutex> m_mutex;
 	///
 	/// \brief Used to halt / deactivate queue
 	///

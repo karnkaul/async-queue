@@ -9,7 +9,7 @@ namespace kt {
 /// \brief Wrapper for a mutex and associated locks
 ///
 template <typename Mutex = std::mutex>
-struct lockable final {
+struct lockable_t final {
 	Mutex mutex;
 
 	///
