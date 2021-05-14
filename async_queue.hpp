@@ -43,9 +43,7 @@ class async_queue {
 	///
 	/// \brief Polymorhic destructor
 	///
-	virtual ~async_queue() {
-		clear();
-	}
+	virtual ~async_queue() { clear(); }
 
   public:
 	///
@@ -105,9 +103,7 @@ template <typename... U>
 void async_queue<T, Mutex>::emplace(U&&... u) {
 	{
 		auto lock = m_mutex.lock();
-		if (m_active) {
-			m_queue.emplace_back(std::forward<U>(u)...);
-		}
+		if (m_active) { m_queue.emplace_back(std::forward<U>(u)...); }
 	}
 	m_cv.notify_one();
 }
@@ -117,9 +113,7 @@ template <template <typename...> typename C, typename... Args>
 void async_queue<T, Mutex>::push(C<T, Args...>&& ts) {
 	{
 		auto lock = m_mutex.lock();
-		if (m_active) {
-			std::move(ts.begin(), ts.end(), std::back_inserter(m_queue));
-		}
+		if (m_active) { std::move(ts.begin(), ts.end(), std::back_inserter(m_queue)); }
 	}
 	m_cv.notify_all();
 }

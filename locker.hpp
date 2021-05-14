@@ -47,16 +47,11 @@ struct locked_t {
 	lock_t lock;
 	T& t;
 
-	locked_t(kt::lockable_t<M>& mutex, T& t) : lock(mutex.template lock<L>()), t(t) {
-	}
+	locked_t(kt::lockable_t<M>& mutex, T& t) : lock(mutex.template lock<L>()), t(t) {}
 
-	T& get() const noexcept {
-		return t;
-	}
+	T& get() const noexcept { return t; }
 
-	operator T&() const noexcept {
-		return t;
-	}
+	operator T&() const noexcept { return t; }
 };
 
 template <typename T, template <typename...> typename L, typename M>
@@ -66,24 +61,17 @@ struct locked_t<T const, L, M> {
 	lock_t lock;
 	T const& t;
 
-	locked_t(kt::lockable_t<M>& mutex, T const& t) : lock(mutex.template lock<L>()), t(t) {
-	}
+	locked_t(kt::lockable_t<M>& mutex, T const& t) : lock(mutex.template lock<L>()), t(t) {}
 
-	T const& get() const noexcept {
-		return t;
-	}
+	T const& get() const noexcept { return t; }
 
-	operator T const &() const noexcept {
-		return t;
-	}
+	operator T const &() const noexcept { return t; }
 };
 
 template <typename T, typename M>
-locker_t<T, M>::locker_t(T&& t) noexcept : t(std::move(t)) {
-}
+locker_t<T, M>::locker_t(T&& t) noexcept : t(std::move(t)) {}
 template <typename T, typename M>
-locker_t<T, M>::locker_t(T const& t) : t(t) {
-}
+locker_t<T, M>::locker_t(T const& t) : t(t) {}
 template <typename T, typename M>
 template <template <typename...> typename L>
 locked_t<T const, L, M> locker_t<T, M>::lock() const {
