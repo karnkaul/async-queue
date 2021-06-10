@@ -21,31 +21,11 @@ template <typename T, typename Mutex = std::mutex>
 class async_queue {
   public:
 	using type = T;
-	using sync = Mutex;
+	using mutex_t = Mutex;
 
-  protected:
-	///
-	/// \brief Used to wait on pop() and notify on push()/clear()
-	///
-	std::condition_variable m_cv;
-	std::deque<T> m_queue;
-	mutable lockable_t<Mutex> m_mutex;
-	///
-	/// \brief Used to halt / deactivate queue
-	///
-	bool m_active = true;
-
-  public:
-	///
-	/// \brief Default constructor
-	///
 	async_queue() = default;
-	///
-	/// \brief Polymorhic destructor
-	///
 	virtual ~async_queue() { clear(); }
 
-  public:
 	///
 	/// \brief Move a T to the back of the queue and notify one
 	///
@@ -86,6 +66,18 @@ class async_queue {
 	/// \brief Set active/inactive
 	///
 	void active(bool set);
+
+  protected:
+	///
+	/// \brief Used to wait on pop() and notify on push()/clear()
+	///
+	std::condition_variable m_cv;
+	std::deque<T> m_queue;
+	mutable lockable_t<Mutex> m_mutex;
+	///
+	/// \brief Used to halt / deactivate queue
+	///
+	bool m_active = true;
 };
 
 template <typename T, typename Mutex>
@@ -157,8 +149,10 @@ bool async_queue<T, Mutex>::active() const {
 
 template <typename T, typename Mutex>
 void async_queue<T, Mutex>::active(bool set) {
-	auto lock = m_mutex.lock();
-	m_active = set;
+	{
+		auto lock = m_mutex.lock();
+		m_active = set;
+	}
 	m_cv.notify_all();
 }
 } // namespace kt
